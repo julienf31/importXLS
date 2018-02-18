@@ -39,18 +39,29 @@ class HomeController extends BaseController {
 
         $sheetData = $spreadsheet2->getActiveSheet()->toArray(null, true, true, true);
 
-        $data = array_slice($sheetData,4);
+        $titleArray = array_slice($sheetData,4,1);
 
-        foreach ($data as $dat){
-            foreach ($dat as $cell){
-                echo $cell;
-            }
-            echo "<hr>";
+        $data = array_slice($sheetData,5,-1);
+
+        $import = array();
+        $title = array();
+
+        foreach ($titleArray[0] as$tit){
+                array_push($title,str_replace(' ','_',str_replace('  ',' ',str_replace('-','',strtolower($tit)))));
         }
 
+        print_r($title);
+        foreach ($data as $dat){
+            $i = 0;
+            $insert = array();
+            foreach ($dat as $cell){
+                $insert[$title[$i]] = $cell;
+                $i++;
+            }
+            array_push($import,$insert);
+        }
 
-        die();
-        //Data::insert();
+        Data::insert($import);
 
         return Redirect::route('home');
     }
