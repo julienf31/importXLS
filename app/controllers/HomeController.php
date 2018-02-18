@@ -22,34 +22,35 @@ class HomeController extends BaseController {
 	}
 
 	public function read(){
-        Config::set('excel::import.startRow', 5);
 
-        $excel = App::make('Excel');
-        //$excel = App::make('Excel');
-        $excel->load('15_UG_09Feb2018111910002.xls', function($reader){
-            // Loop through all rows
-            $sheet = $reader->getSheet(0);
-            echo "sheet : ";
-            print_r($sheet);
-            die();
-            //$highestRow = $sheet->getHighestRow();
-            //echo $reader->getHighestRow();
-            $reader->each(function($row) {
-                //echo "<br>$row<br>";
-                if(str_contains($row,"OFF")){
-                    echo "stop";
-                }
-            });
-        });
+
+        $reader = new PhpOffice\PhpSpreadsheet\Reader\Xls();
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load("15_UG_09Feb2018111910002.xls");
+
+        $highestRow = $spreadsheet->getActiveSheet()->getHighestRow();
+        $firstRow = 5;
+        $lastRow = $highestRow-2;
+
+
+        $filterSubset = new ReadFilter(5,$lastRow);
+        $reader->setReadFilter($filterSubset);
+        $spreadsheet2 = $reader->load("15_UG_09Feb2018111910002.xls");
+
+        $sheetData = $spreadsheet2->getActiveSheet()->toArray(null, true, true, true);
+
+        $data = array_slice($sheetData,4);
+
+        foreach ($data as $dat){
+            foreach ($dat as $cell){
+                echo $cell;
+            }
+            echo "<hr>";
+        }
 
 
         die();
-        $collection = array();
-        foreach ($dump as $line){
-            array_push($collection, $line);
-        }
-
-        Data::insert($collection);
+        //Data::insert();
 
         return Redirect::route('home');
     }
@@ -66,4 +67,22 @@ class HomeController extends BaseController {
     }
 
 
+}
+
+class ReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter
+{
+    private $startRow = 0;
+    private $endRow   = 0;
+
+    public function __construct($startRow, $endRow) {
+        $this->startRow = $startRow;
+        $this->endRow   = $endRow;
+    }
+
+    public function readCell($column, $row, $worksheetName = '') {
+        if ($row >= $this->startRow && $row <= $this->endRow) {
+            return true;
+        }
+        return false;
+    }
 }
