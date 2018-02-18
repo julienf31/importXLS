@@ -22,19 +22,54 @@ class HomeController extends BaseController {
 	}
 
 	public function read(){
-        Config::set('excel::import.startRow', 5);
 
-        $excel = App::make('Excel');
-        $dump = $excel->load('15_UG_09Feb2018111910002.xls')->ignoreEmpty()->all()->toArray();
 
-        $collection = array();
-        foreach ($dump as $line){
-            array_push($collection, $line);
+        $reader = new PhpOffice\PhpSpreadsheet\Reader\Xls();
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load("15_UG_09Feb2018111910002.xls");
+
+        $highestRow = $spreadsheet->getActiveSheet()->getHighestRow();
+        $firstRow = 5;
+        $lastRow = $highestRow-2;
+
+
+        $filterSubset = new ReadFilter(5,$lastRow);
+        $reader->setReadFilter($filterSubset);
+        $spreadsheet2 = $reader->load("15_UG_09Feb2018111910002.xls");
+
+        $sheetData = $spreadsheet2->getActiveSheet()->toArray(null, true, true, true);
+
+        $titleArray = array_slice($sheetData,4,1);
+
+        $data = array_slice($sheetData,5,-1);
+
+        $import = array();
+        $title = array();
+
+        foreach ($titleArray[0] as$tit){
+                array_push($title,str_replace(' ','_',str_replace('  ',' ',str_replace('-','',strtolower($tit)))));
         }
 
-        Data::insert($collection);
+        print_r($title);
+        foreach ($data as $dat){
+            $i = 0;
+            $insert = array();
+            foreach ($dat as $cell){
+                $insert[$title[$i]] = $cell;
+                $i++;
+            }
+            array_push($import,$insert);
+        }
+
+        Data::insert($import);
 
         return Redirect::route('home');
+    }
+
+    public function truncateFile(){
+        Excel::load('15_UG_09Feb2018111910002.xls', function($reader) {
+
+        })->get();
     }
 
     public function clean(){
@@ -42,4 +77,23 @@ class HomeController extends BaseController {
         return Redirect::route('home');
     }
 
+
+}
+
+class ReadFilter implements \PhpOffice\PhpSpreadsheet\Reader\IReadFilter
+{
+    private $startRow = 0;
+    private $endRow   = 0;
+
+    public function __construct($startRow, $endRow) {
+        $this->startRow = $startRow;
+        $this->endRow   = $endRow;
+    }
+
+    public function readCell($column, $row, $worksheetName = '') {
+        if ($row >= $this->startRow && $row <= $this->endRow) {
+            return true;
+        }
+        return false;
+    }
 }
