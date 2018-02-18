@@ -43,7 +43,7 @@ class HomeController extends BaseController {
         //création du tableau de titres
         $titles = array_slice($sheetData,4,1);
         $title = array();
-        foreach ($titles[0] as$tit){
+        foreach ($titles[0] as $tit){
             array_push($title,str_replace(' ','_',str_replace('  ',' ',str_replace('-','',strtolower($tit)))));
         }
 
