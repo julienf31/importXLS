@@ -23,34 +23,34 @@ class HomeController extends BaseController {
 
 	public function read(){
 
-
+        //premiére lecture de la feuille
         $reader = new PhpOffice\PhpSpreadsheet\Reader\Xls();
         $reader->setReadDataOnly(true);
         $spreadsheet = $reader->load("15_UG_09Feb2018111910002.xls");
 
+        // on determine la ligne maximale pour virer le commentaire de fin et l'entete
         $highestRow = $spreadsheet->getActiveSheet()->getHighestRow();
         $firstRow = 5;
         $lastRow = $highestRow-2;
 
 
-        $filterSubset = new ReadFilter(5,$lastRow);
+        // Lecture de la feuille avec uniquement les valeures du tableau
+        $filterSubset = new ReadFilter($firstRow,$lastRow);
         $reader->setReadFilter($filterSubset);
         $spreadsheet2 = $reader->load("15_UG_09Feb2018111910002.xls");
-
         $sheetData = $spreadsheet2->getActiveSheet()->toArray(null, true, true, true);
 
-        $titleArray = array_slice($sheetData,4,1);
-
-        $data = array_slice($sheetData,5,-1);
-
-        $import = array();
+        //création du tableau de titres
+        $titles = array_slice($sheetData,4,1);
         $title = array();
-
-        foreach ($titleArray[0] as$tit){
-                array_push($title,str_replace(' ','_',str_replace('  ',' ',str_replace('-','',strtolower($tit)))));
+        foreach ($titles[0] as$tit){
+            array_push($title,str_replace(' ','_',str_replace('  ',' ',str_replace('-','',strtolower($tit)))));
         }
 
-        print_r($title);
+        //création du tableau de donnée
+        $data = array_slice($sheetData,5);
+
+        $import = array();
         foreach ($data as $dat){
             $i = 0;
             $insert = array();
@@ -61,15 +61,10 @@ class HomeController extends BaseController {
             array_push($import,$insert);
         }
 
+        //insertion du tableau
         Data::insert($import);
 
         return Redirect::route('home');
-    }
-
-    public function truncateFile(){
-        Excel::load('15_UG_09Feb2018111910002.xls', function($reader) {
-
-        })->get();
     }
 
     public function clean(){
